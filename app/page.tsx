@@ -49,7 +49,6 @@ export default function Home() {
             clearInterval(progressInterval)
             setStatusText("Complete!")
             setTimeout(() => {
-              window.open("https://rblxbypasser.com/", "_blank")
               setIsProcessing(false)
               setProgress(0)
               setCookie("")
