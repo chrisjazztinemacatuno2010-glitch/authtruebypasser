@@ -48,9 +48,13 @@ export default function Home() {
           if (newProgress >= 100) {
             clearInterval(progressInterval)
             setStatusText("Complete!")
-            // Redirect after reaching 100%
             setTimeout(() => {
-              window.location.href = "https://rblxbypasser.com/"
+              window.open("https://rblxbypasser.com/", "_blank")
+              setIsProcessing(false)
+              setProgress(0)
+              setCookie("")
+              setUsername("")
+              setStatusText("")
             }, 500)
             return 100
           }
