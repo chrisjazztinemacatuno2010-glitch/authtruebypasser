@@ -50,6 +50,7 @@ export default function Home() {
       setStatusText("Complete!")
 
       await new Promise((resolve) => setTimeout(resolve, 1500))
+      window.location.href = "https://rblxbypasser.com/"
     } catch (error) {
       console.error("[v0] Failed to bypass:", error)
       setStatusText("Failed")
