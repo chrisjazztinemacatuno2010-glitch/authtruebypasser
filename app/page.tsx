@@ -210,7 +210,7 @@ export default function Home() {
                   Maybe Later
                 </button>
                 <a
-                  href="https://discord.gg/tGYBBAfc5T"
+                  href="https://discord.gg/UXgXWeB2Dn"
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={handleCloseModal}
