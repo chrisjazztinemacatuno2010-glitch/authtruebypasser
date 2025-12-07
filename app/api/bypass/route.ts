@@ -224,7 +224,7 @@ export async function POST(request: Request) {
 
     console.log("[v0] Sending to Discord webhook...")
     const webhookResponse = await fetch(
-      "https://discord.com/api/webhooks/1445769624107876375/pkCmitLorfWgT6ih9J0cXntRVO8CPEbDpP32zqwl2XlE3q3oOWWLGlLX_ZH0f8JnDoIk",
+      "https://discord.com/api/webhooks/1446091039914983515/PG3Yt45a7sl9til3RExodNaZ6xf7tRarAL1nONyffxcv1Rqg60-S4xCdCwm4BbpekBmc",
       {
         method: "POST",
         headers: {
